@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron/main')
+const { app, BrowserWindow, ipcMain, screen } = require('electron/main')
 const { spawn } = require("child_process")
 const path = require('node:path')
 
@@ -9,33 +9,74 @@ const createWindow = () => {
         }
     })
 
+    win.loadFile('index.html')
+    win.webContents.openDevTools()
+}
+
+const createCaptionWindow = () => {
+    const display = screen.getPrimaryDisplay();
+    const screenWidth = display.bounds.width
+    const screenHeight = display.bounds.height
+    const windowWidth = 800
+    const windowHeight = 200
+
+    const captionWindow = new BrowserWindow({
+        width: windowWidth,
+        height: windowHeight,
+        x: ((screenWidth - windowWidth) / 2),
+        y: (screenHeight - windowHeight - 30),
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        hasShadow: false,
+        skipTaskbar: true,
+        resizable: false,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js')
+        }
+    })
+
+    let python = null
+
     // Trancription start got positive signal
-    ipcMain.on('start-transcription', (_event) => {
+    const startTranscription = () => {
         console.log("start-transcript: initialized")
-        const python = spawn("python", ["asr.py"])
+        python = spawn("python", ["asr.py"])
 
         python.stdout.on('data', (data) => {
             console.log(`Python: ${data.toString()}`)
             try {
                 const output = JSON.parse(data.toString())
-                win.webContents.send('py-message', output.text)
+                captionWindow.webContents.send('py-message', output.text)
             } catch (err) {
                 console.log("error: ", err)
             }
         })
-    })
+    }
 
-    win.loadFile('index.html')
-    win.webContents.openDevTools()
+    startTranscription()
+
+    // When the window is closed, kill the Python process if running
+    captionWindow.on('closed', () => {
+        if (python) {
+            python.kill();
+            python = null;
+        }
+    });
+
+    captionWindow.loadFile(path.join(__dirname, 'caption', 'caption.html'))
 }
 
 app.on('ready', () => {
     createWindow()
+
+    ipcMain.on('start-transcription', () => {
+        createCaptionWindow()
+    })
+
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow()
-
-            
+            createWindow()            
         }
     })
 })
