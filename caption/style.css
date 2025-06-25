@@ -1,0 +1,27 @@
+@font-face {
+    font-family: 'kalpurush';
+    src: url(./kalpurush.ttf) format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    margin: 0;
+    background: transparent;
+    color: rgb(0, 0, 0);
+    font-family: 'kalpurush';
+    font-size: 24px;
+    backdrop-filter: blur(10px); /* Optional: Glassy effect */
+    -webkit-app-region: drag;    /* Allows drag on frameless window */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#caption-line-1 {
+    background-color: rgb(255, 230, 0);
+}
+
+#caption-line-2 {
+    background-color: rgb(255, 230, 0);
+}
