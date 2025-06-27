@@ -2,6 +2,10 @@ const { app, BrowserWindow, ipcMain, screen } = require('electron/main')
 const { spawn } = require("child_process")
 const path = require('node:path')
 
+global.captionWindowStatus = {
+    isOpen: false
+}
+
 const createWindow = () => {
     const win = new BrowserWindow({
         webPreferences: {
@@ -62,6 +66,7 @@ const createCaptionWindow = () => {
             python.kill();
             python = null;
         }
+        global.captionWindowStatus.isOpen = false
     });
 
     captionWindow.loadFile(path.join(__dirname, 'caption', 'caption.html'))
@@ -71,12 +76,15 @@ app.on('ready', () => {
     createWindow()
 
     ipcMain.on('start-transcription', () => {
-        createCaptionWindow()
+        if (!global.captionWindowStatus.isOpen) {
+            createCaptionWindow()
+            global.captionWindowStatus.isOpen = true
+        }
     })
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow()            
+            createWindow()
         }
     })
 })
