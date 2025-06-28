@@ -12,7 +12,7 @@ const createWindow = () => {
   win.loadFile("index.html");
   win.webContents.openDevTools();
 };
-
+let captionWindow = null;
 const createCaptionWindow = () => {
   const display = screen.getPrimaryDisplay();
   const screenWidth = display.bounds.width;
@@ -20,7 +20,7 @@ const createCaptionWindow = () => {
   const windowWidth = 800;
   const windowHeight = 200;
 
-  const captionWindow = new BrowserWindow({
+  captionWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
     x: (screenWidth - windowWidth) / 2,
@@ -69,14 +69,21 @@ const createCaptionWindow = () => {
 
   captionWindow.loadFile(path.join(__dirname, "caption", "caption.html"));
 };
-
+const closeCaptionWindow = () => {
+  if (captionWindow && !captionWindow.isDestroyed()) {
+    captionWindow.close();
+    captionWindow = null;
+  }
+};
 app.on("ready", () => {
   createWindow();
 
   ipcMain.on("start-transcription", () => {
     createCaptionWindow();
   });
-
+  ipcMain.on("stop-transcription", () => {
+    closeCaptionWindow();
+  });
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
