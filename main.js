@@ -22,6 +22,7 @@ const createCaptionWindow = () => {
   const windowWidth = 800;
   const windowHeight = 200;
 
+
   captionWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
@@ -87,7 +88,7 @@ app.on("ready", () => {
       captionWindow = null;
     }
   })
-
+  
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -97,4 +98,5 @@ app.on("ready", () => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+
 });
