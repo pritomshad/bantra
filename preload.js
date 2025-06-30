@@ -10,3 +10,7 @@ contextBridge.exposeInMainWorld('bantraAPI', {
   onInference: (callback) => ipcRenderer.on("inference", (_event, token) => callback(token)),
   onInferenceDone: (callback) => ipcRenderer.on("inference-done", () => callback())
 })
+
+contextBridge.exposeInMainWorld('ollamaAPI', {
+  makeNote: () => ipcRenderer.invoke("ollama-make-note")
+});
