@@ -1,6 +1,9 @@
-const { app, BrowserWindow, ipcMain, screen } = require("electron/main");
+const { app, net, BrowserWindow, ipcMain, screen } = require("electron/main");
 const { spawn } = require("child_process");
 const path = require("node:path");
+const fs = require("fs");
+
+let captionWindow = null;
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -9,10 +12,68 @@ const createWindow = () => {
     },
   });
 
+  /**
+   * Send request using `net` to ollama with payload. You have to have ollama
+   * installed in system. Currently it is using llama3.2. It is open in 
+   * http://localhost:11434 by default.
+   * Each time ollama responds with a `token` it is sent to renderer
+   */
+  let isProcessing = false;
+
+  ipcMain.handle('ollama-make-note', async () => {
+    console.log("from main: ollama activated...");
+    if (isProcessing) {
+      return;
+    }
+
+    request = net.request({
+      method: 'POST',
+      protocol: 'http',
+      hostname: 'localhost',
+      port: 11434,
+      path: '/api/generate'
+    });
+
+    request.setHeader('Content-Type', 'application/json');
+    request.on('response', (_response) => {
+      _response.on('data', (chunk) => {
+        let parsed_json = JSON.parse(chunk.toString());
+        if (parsed_json.done) {
+          // When ollama finishes sending tokens parsed_json.done becomes true
+          win.webContents.send('inference-done');
+        }
+        // Each token is sent to renderer
+        win.webContents.send('inference', parsed_json.response);
+      })
+    })
+
+    /**
+     * @JACsadi replace output.txt with the trancript text file from
+     * meeting recording. The response is better with a good prompt.
+     * Write a better prompt ig.
+     */
+    const text_content = fs.readFileSync(path.join(__dirname, 'output.txt'), 'utf8');
+    const payload = JSON.stringify({
+      model: 'llama3.2',
+      prompt: `You are a Class Note Generator who is very good at making well organised notes from raw class lecture transcript.
+      Given the following transcript make a note :
+      
+      Raw Class Lecture Transcript:
+      ${text_content}
+      
+      Respond with Markdown`,
+      stream: true
+    })
+
+    request.write(payload);
+    request.end();
+
+  });
+
   win.loadFile("index.html");
   win.webContents.openDevTools();
 };
-let captionWindow = null;
+
 const createCaptionWindow = () => {
   const display = screen.getPrimaryDisplay();
   const screenWidth = display.bounds.width;

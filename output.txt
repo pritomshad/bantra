@@ -1,0 +1,54 @@
+Hello viewers, thank you all so much because you’ve patiently watched many videos from the beginning and learned a lot. In this video, I will discuss arrays because many of you face problems with this topic. Honestly speaking, I had already made a few videos on this topic before, but I couldn’t explain in detail due to time constraints. But this time, InshaAllah, I will try to explain in detail and elaborate properly about arrays.
+
+I will keep the previous videos in front of this one so that it becomes easier for you to understand. Okay, so let’s first understand what this thing is, how to create or declare it. So first, let’s understand the need for it. For example, if you have 100 students in your class and you want to sum their marks and find their average result, what would you normally do? Surely, you know that you would have to declare variables like mark1, mark2, mark3... and so on up to 100.
+
+You’d have to take 100 marks from users, then sum them and find the average. So in this case, we’d need 100 variables, right? Declaring 100 variables manually would be time-consuming and tedious. Now imagine if your class had 200, 250, 300, 400, or even 500 students — then you’d have to declare 500 variables! That would be very complex and inefficient. So, can this work be done in a short way? Absolutely. And for that, we use arrays.
+
+So if I want to create 100 variables briefly, look — if I had to write mark1 to mark100 one by one, it would take a lot of time. But here, with an array, I can create 100 variables easily. Maybe it’s not clear to you at this moment, but soon it will be. No worries. Now let’s see how to create it. Let’s understand the declaration process of an array.
+
+To declare an array, you must first specify the data type. Here you can see I’ve written int as the data type, then you need to provide the array name — I’ve written marks. Then you have to give the size — how many variables you want to have under the name marks. We want 100 variables, so we’ve given 100. Again, the method is: first mention the data type — int if it’s an integer, float for floating-point, double for double, and so on. Then give the array a name, which can be anything, and you must use square brackets to indicate it's an array.
+
+That’s the simplest way to declare an array. Right. Let’s see some examples. You can create arrays of types like int, float, double, char, and others. So you’ve probably understood that an array is a collection of variables — like here, a collection of 100 integer variables. So that’s what an array is: a collection of variables of the same data type. Clear? Right.
+
+Now let’s say we’ve declared the array as int marks[5]; — so here we have five variables. Now the question is, how are there five variables? Let’s try to understand that. When we declare the array size as 5, remember — the first variable will be marks[0]. Note that this is called an index. The array index always starts from 0. It can never be negative — not -1 or -2. Always positive. Okay, right.
+
+So, although we declared marks[5], the actual indices will be marks[0], marks[1], marks[2], marks[3], and marks[4]. Even though the size is 5, it won’t go up to marks[5] because indexing starts at 0. So we have a total of 5 variables. You can count — 1, 2, 3, 4, 5. Exactly. Right.
+
+Now let’s see how to initialize an array — that is, how to store values in its variables. Normally, we assign values like number1 = 10, number2 = 20, etc. But for arrays, we must specify the array name along with the index — like marks[0] = 80;, marks[1] = 65;, and so on. But you can’t do marks[5] = value; because marks[5] doesn't exist in this array of size 5.
+
+As soon as you declare the array, memory is allocated for it. Okay, so I hope you’ve understood how to declare and initialize an array. One important thing to remember — always use square brackets.
+
+Now, can we initialize it during declaration? Yes, we can. Like with normal variables — int number = 10;. Similarly, for arrays, you can directly initialize values like this:
+int marks[] = {80, 65, 75, 82, 45};
+
+Here, the compiler will automatically assign values: 80 to index 0, 65 to index 1, and so on. If you don’t provide the size explicitly, the compiler will determine the size based on the number of values. Clear?
+
+Now let’s see how to print values from the array. We’ve declared and initialized it. To print a normal variable, we’d write something like printf("%d", number);. For arrays, we must specify the index too — printf("%d", marks[0]);, marks[1], etc.
+
+Now the question is, do we need to manually write printf for each index? Not necessarily. Since only the index is changing (0, 1, 2, 3, 4), we can use a loop. Like a for loop from 0 to 4 — then in the loop, just print marks[i].
+
+Hope you’ve now understood how to work with one-dimensional arrays — we call it one-dimensional because there’s only one index. Later, I’ll talk about types of arrays, but for now, don’t worry if it’s not fully clear.
+
+Now let’s see how to take input from the user into an array. Normally, we’d use scanf("%d", &number);. For arrays, we need to specify the index — like scanf("%d", &marks[0]);, &marks[1];, etc.
+
+Again, do we need to write multiple scanf statements? No — same idea. Only the index is changing. So we can use a loop from 0 to 4, and use scanf("%d", &marks[i]); inside it. Simple.
+
+Now, about types of arrays — mainly there are two types:
+
+One-Dimensional Arrays (1D) — or linear arrays.
+
+Multi-Dimensional Arrays, such as:
+
+Two-Dimensional Arrays (2D)
+
+Three-Dimensional Arrays (3D)
+
+For 2D arrays, you’ll see two index values, for 3D — three. Very easy to recognize. In the upcoming tutorials, I will first discuss one-dimensional arrays in detail, and then I will try to cover 2D and 3D arrays, InshaAllah.
+
+Lastly, from arrays, we can also do linear search. I will show at least one searching algorithm — linear search. Binary search and many others exist, but I’ll focus on what’s essential. More in-depth coverage will be part of the Data Structures subject. I plan to work on that in the future, InshaAllah.
+
+So that’s it for today’s video. Stay well and healthy. Let me know how you liked the video, how much you’ve understood, and whether the concepts are clear.
+
+You can see my phone number here — call only between 2 PM to 3 PM, please. You can also connect with me on Facebook. Don’t forget to search for and subscribe to me on YouTube by searching for "Isolation Rubel".
+
+Stay well, stay safe. Allah Hafez.
