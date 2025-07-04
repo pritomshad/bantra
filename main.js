@@ -4,7 +4,7 @@ const path = require("node:path");
 const fs = require("fs");
 
 let captionWindow = null;
-
+let transcriptionRunning = true;
 const createWindow = () => {
   const win = new BrowserWindow({
     webPreferences: {
@@ -104,22 +104,39 @@ const createCaptionWindow = () => {
   // Trancription start got positive signal
   const startTranscription = () => {
     // const transcripButton = document.getElementById("transciption-button");
-    // if (transcripButton.value == "1") {
     console.log("start-transcript: initialized");
-    python = spawn("python", ["asr.py"]);
-    dython = spawn("python", ["record_audio.py"]);
-    python.stdout.on("data", (data) => {
-      console.log(`Python: ${data.toString()}`);
-      try {
-        const output = JSON.parse(data.toString());
-        captionWindow.webContents.send("py-message", output.text);
-      } catch (err) {
-        console.log("error: ", err);
-      }
-    });
-    dython.stdout.on("data", (data) => {
-      console.log(`Python: ${data.toString()}`);
-    });
+    const rundython = () => {
+      if (!transcriptionRunning) return;
+
+      python = spawn("python", ["asr.py"]);
+
+      // dython = spawn("python", ["device.py"]);
+      python.stdout.on("data", (data) => {
+        console.log(`Python: ${data.toString()}`);
+        try {
+          const output = JSON.parse(data.toString());
+          captionWindow.webContents.send("py-message", output.text);
+        } catch (err) {
+          console.log("error: ", err);
+        }
+      });
+      // dython.stdout.on("data", (data) => {
+      //   console.log(`Python: ${data.toString()}`);
+      // });
+      python.on("exit", (code, signal) => {
+        console.log(
+          `Python process exited with code ${code} and signal ${signal}`
+        );
+        python = null;
+        //when our python script exit after no audio detection, if we havent stopped transcriop, it restarts
+        if (transcriptionRunning) {
+          console.log("Restarting transcription...");
+          setTimeout(rundython, 1000);
+          // restart
+        }
+      });
+    };
+    rundython();
     // }
   };
 
@@ -128,8 +145,9 @@ const createCaptionWindow = () => {
   // When the window is closed, kill the Python process if running
   captionWindow.on("closed", () => {
     if (python) {
+      transcriptionRunning = false;
       python.kill();
-      dython.kill();
+      // dython.kill();
       dython = null;
       python = null;
     }
@@ -147,6 +165,7 @@ app.on("ready", () => {
   createWindow();
 
   ipcMain.on("start-transcription", () => {
+    transcriptionRunning = true;
     createCaptionWindow();
   });
   ipcMain.on("stop-transcription", () => {

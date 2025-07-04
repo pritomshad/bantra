@@ -5,13 +5,10 @@ import json
 import speech_recognition as sr
 import queue
 import threading
-import errno
-import asyncio
 import time 
 import os
-import sys
+OUTPUT_FILE = "output.wav"
 
-kk=True
 def get_active_audio_device(p : pyaudio.PyAudio):
     try:
         wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
@@ -36,7 +33,6 @@ try to implement whisper for live caption... OVER
 
 """
 def record_chunk(p : pyaudio.PyAudio, device_index : int, channels : int, rate : int, q: queue.Queue, stop_event: threading.Event, chunk_duration : int = 3, chunk_size : int = 1024):
-    global kk
     FORMAT = pyaudio.paInt16
     data_queue = queue.Queue()
     stream = p.open(format=FORMAT,
@@ -51,6 +47,7 @@ def record_chunk(p : pyaudio.PyAudio, device_index : int, channels : int, rate :
               data_queue.put(data)
              except Exception as e:
               data_queue.put(e)
+
     while not stop_event.is_set():
         frames = []
         
@@ -67,7 +64,8 @@ def record_chunk(p : pyaudio.PyAudio, device_index : int, channels : int, rate :
                 else:
                     frames.append(result)
             else:
-                 os.execv(sys.executable, ['python'] + sys.argv)  # relaunch the script
+                  stop_event.set()
+                  break
                 # print(json.dumps({"error": "No audio or read timeout"}), flush=True)
                 # loopback = get_active_audio_device(pyaudio.PyAudio())
                 # if not loopback:
@@ -132,33 +130,65 @@ def live_caption():
         
         print(f"listening to device: {loopback['name']}", flush=True)
         record_thread = threading.Thread(target=record_chunk, args=(p, device_index, channels, rate, audio_queue, stop_event))
+        # print(1)
         record_thread.start()
+        # print(2)
         # while record_thread.is_alive():
         try:
-            while True :
-
-                audio_chunk = audio_queue.get(timeout=5)
-                try:
-                    with sr.AudioFile(audio_chunk) as source:
-                        audio_data = recognizer.record(source)
-                    text = recognizer.recognize_google(audio_data, language='bn-BD')
-                    print(json.dumps({"text": text}), flush=True)
+            while not (audio_queue.empty() and stop_event.is_set()):
+            #  print(3)
+             audio_chunk = None
+             try:
+              audio_chunk = audio_queue.get(timeout=20)
+             except queue.Empty:
+              print(json.dumps({"error": "Audio queue timeout"}), flush=True)
+              continue
+            
+             try:
+                # print(5)
+                with sr.AudioFile(audio_chunk) as source:
+                 audio_data = recognizer.record(source)
+                #  print(6)
+                text = recognizer.recognize_google(audio_data, language='bn-BD')
+                print(json.dumps({"text": text}), flush=True)
                     #print(text)
-                    
+                # print(6)   
                 #    await websocket.send(json.dumps({"transcript": text}))
-                except sr.UnknownValueError:
-                    print(json.dumps({"text": "[[Unrecognized speech]]"}), flush=True)
+             except sr.UnknownValueError:
+                # print(6)   
+                print(json.dumps({"text": "[[Unrecognized speech]]"}), flush=True)
                     #print('[][][]')
                     
                 #    await websocket.send(json.dumps({"transcript": ""}))
-                except sr.RequestError as e:
-                    print(json.dumps({"error": f"API request failed: {e}"}), flush=True)
+             except sr.RequestError as e:
+                # print(6)   
+                print(json.dumps({"error": f"API request failed: {e}"}), flush=True)
                 #    await websocket.send(json.dumps({"error": str(e)}))
-                    break
+                break
+             audio_chunk.seek(0)
+            #  print(4)
+             with wave.open(audio_chunk, 'rb') as wf:
+              new_frames = wf.readframes(wf.getnframes())
+             if os.path.exists(OUTPUT_FILE):
+              with wave.open(OUTPUT_FILE, 'rb') as wf:
+               old_params = wf.getparams()
+               old_frames = wf.readframes(wf.getnframes())
+              if old_params[:3] != (channels, 2, rate):
+               raise ValueError("Existing file format mismatch.")
+              all_frames = old_frames + new_frames
+             else:
+              all_frames = new_frames
+   
+             with wave.open(OUTPUT_FILE, 'wb') as wf:
+               wf.setnchannels(channels)
+               wf.setsampwidth(2)
+               wf.setframerate(rate)
+               wf.writeframes(all_frames)   
+
         except KeyboardInterrupt:
             print("Interrupted")
         finally:
-            # print("Exited record_chunk()")
+            print("Exited record_chunk()")
             stop_event.set()
             record_thread.join()
             del p
@@ -167,9 +197,4 @@ def live_caption():
             return
 
 if __name__ == "__main__":
-
-   while True: # asyncio.run(main())
     live_caption()
-    print("Restarting process to refresh audio device state...", flush=True)
-    time.sleep(1)
-    os.execv(sys.executable, ['python'] + sys.argv)  # relaunch the script
