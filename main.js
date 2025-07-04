@@ -100,7 +100,7 @@ const createCaptionWindow = () => {
   });
 
   let python = null;
-  let dython = null;
+
   // Trancription start got positive signal
   const startTranscription = () => {
     // const transcripButton = document.getElementById("transciption-button");
@@ -148,7 +148,6 @@ const createCaptionWindow = () => {
       transcriptionRunning = false;
       python.kill();
       // dython.kill();
-      dython = null;
       python = null;
     }
   });

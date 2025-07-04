@@ -136,7 +136,9 @@ def live_caption():
         # while record_thread.is_alive():
         try:
             while not (audio_queue.empty() and stop_event.is_set()):
-            #  print(3)
+            # this part creates the  caption, this hasnt been changed 
+
+
              audio_chunk = None
              try:
               audio_chunk = audio_queue.get(timeout=20)
@@ -165,6 +167,8 @@ def live_caption():
                 print(json.dumps({"error": f"API request failed: {e}"}), flush=True)
                 #    await websocket.send(json.dumps({"error": str(e)}))
                 break
+             #this part records the audio and created a wav file
+
              audio_chunk.seek(0)
             #  print(4)
              with wave.open(audio_chunk, 'rb') as wf:
