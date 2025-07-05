@@ -5,17 +5,15 @@ import json
 import speech_recognition as sr
 import queue
 import threading
-import errno
-import asyncio
-import time 
+import time
 import os
-import sys
 
-kk=True
-def get_active_audio_device(p : pyaudio.PyAudio):
+OUTPUT_FILE = "output.wav"
+
+def get_active_audio_device(p: pyaudio.PyAudio):
     try:
         wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
-    except OSError :
+    except OSError:
         print(json.dumps({"error": "WASAPI not available."}))
         return None
     default_speakers = p.get_device_info_by_index(wasapi_info["defaultOutputDevice"])
@@ -27,16 +25,15 @@ def get_active_audio_device(p : pyaudio.PyAudio):
         return None
     return default_speakers
 
-""" 
+"""
 This works. But, caption generation with chunck_duration is pretty annoying, it breakes word mid sentence.
 we should do something like whisper for local trancription. But recognize_google() is more
 accurate at bangla. So the plan here is to record the whole meeting in an audio file and
 use recognize_google() for full transcript from that recorded file, and for live caption we can use whisper.
 try to implement whisper for live caption... OVER
-
 """
-def record_chunk(p : pyaudio.PyAudio, device_index : int, channels : int, rate : int, q: queue.Queue, stop_event: threading.Event, chunk_duration : int = 3, chunk_size : int = 1024):
-    global kk
+
+def record_chunk(p: pyaudio.PyAudio, device_index: int, channels: int, rate: int, q: queue.Queue, stop_event: threading.Event, chunk_duration: int = 3, chunk_size: int = 1024):
     FORMAT = pyaudio.paInt16
     data_queue = queue.Queue()
     stream = p.open(format=FORMAT,
@@ -45,17 +42,19 @@ def record_chunk(p : pyaudio.PyAudio, device_index : int, channels : int, rate :
                     input=True,
                     input_device_index=device_index,
                     frames_per_buffer=chunk_size)
-    def read_tmd(): 
-             try :
-              data = stream.read(chunk_size, exception_on_overflow=False)
-              data_queue.put(data)
-             except Exception as e:
-              data_queue.put(e)
+
+    def read_tmd():
+        try:
+            data = stream.read(chunk_size, exception_on_overflow=False)
+            data_queue.put(data)
+        except Exception as e:
+            data_queue.put(e)
+
     while not stop_event.is_set():
         frames = []
-        
+
         for _ in range(0, int(rate / chunk_size * chunk_duration)):
-    
+
             thd = threading.Thread(target=read_tmd)
             thd.start()
             thd.join(3)
@@ -67,51 +66,25 @@ def record_chunk(p : pyaudio.PyAudio, device_index : int, channels : int, rate :
                 else:
                     frames.append(result)
             else:
-                 os.execv(sys.executable, ['python'] + sys.argv)  # relaunch the script
-                # print(json.dumps({"error": "No audio or read timeout"}), flush=True)
-                # loopback = get_active_audio_device(pyaudio.PyAudio())
-                # if not loopback:
-                #  print("Failed to get loopback device, retrying in 2 seconds...", flush=True)
-                #  stop_event.set()
-                #  kk=False
-                #  return
-                # loopback = get_active_audio_device(pyaudio.PyAudio())
-                # device_index = loopback['index']
-                # channels = loopback['maxInputChannels']
-                # rate = int(loopback['defaultSampleRate'])
-                # print(f"listening to device: {loopback['name']}", flush=True)
-                # stream = p.open(format=FORMAT,
-                #     channels=channels,
-                #     rate=rate,
-                #     input=True,
-                #     input_device_index=device_index,
-                #     frames_per_buffer=chunk_size)
-                # is_disconnect = (
-                #   e.errno in (-9996,) or
-                #   "unanticipated host error" in str(e).lower() or
-                #   "device unavailable" in str(e).lower() or
-                #   "invalid input device" in str(e).lower()
-                # )
-                # if(is_disconnect) : print("kisher ki", flush=True)
-               
-                # continue
-            
+                stop_event.set()
+                break
+
         buffer = io.BytesIO()
-    
+
         with wave.open(buffer, 'wb') as wf:
             wf.setnchannels(channels)
             wf.setsampwidth(p.get_sample_size(FORMAT))
             wf.setframerate(rate)
             wf.writeframes(b''.join(frames))
         buffer.seek(0)
-        q.put(buffer) # push audio data to queue, this is done for continuous recording
+        q.put(buffer)
 
     stream.stop_stream()
     stream.close()
 
 def live_caption():
     recognizer = sr.Recognizer()
-    audio_queue = queue.Queue(maxsize=10) # capped queue size saves memory
+    audio_queue = queue.Queue(maxsize=10)
     stop_event = threading.Event()
     with pyaudio.PyAudio() as p:
         try:
@@ -120,56 +93,69 @@ def live_caption():
         except Exception as e:
             print(f"Failed to initialize PyAudio: {e}", flush=True)
             return
-        # kk=True
+
         loopback = get_active_audio_device(p)
         if not loopback:
             print("Failed to get loopback device, retrying in 2 seconds...", flush=True)
             return
-        
+
         device_index = loopback['index']
         channels = loopback['maxInputChannels']
         rate = int(loopback['defaultSampleRate'])
-        
+
         print(f"listening to device: {loopback['name']}", flush=True)
         record_thread = threading.Thread(target=record_chunk, args=(p, device_index, channels, rate, audio_queue, stop_event))
         record_thread.start()
-        # while record_thread.is_alive():
-        try:
-            while True :
 
-                audio_chunk = audio_queue.get(timeout=5)
+        try:
+            while not (audio_queue.empty() and stop_event.is_set()):
+
+                audio_chunk = None
+                try:
+                    audio_chunk = audio_queue.get(timeout=20)
+                except queue.Empty:
+                    print(json.dumps({"error": "Audio queue timeout"}), flush=True)
+                    continue
+
                 try:
                     with sr.AudioFile(audio_chunk) as source:
                         audio_data = recognizer.record(source)
                     text = recognizer.recognize_google(audio_data, language='bn-BD')
                     print(json.dumps({"text": text}), flush=True)
-                    #print(text)
-                    
-                #    await websocket.send(json.dumps({"transcript": text}))
                 except sr.UnknownValueError:
                     print(json.dumps({"text": "[[Unrecognized speech]]"}), flush=True)
-                    #print('[][][]')
-                    
-                #    await websocket.send(json.dumps({"transcript": ""}))
                 except sr.RequestError as e:
                     print(json.dumps({"error": f"API request failed: {e}"}), flush=True)
-                #    await websocket.send(json.dumps({"error": str(e)}))
                     break
+
+                audio_chunk.seek(0)
+                with wave.open(audio_chunk, 'rb') as wf:
+                    new_frames = wf.readframes(wf.getnframes())
+                if os.path.exists(OUTPUT_FILE):
+                    with wave.open(OUTPUT_FILE, 'rb') as wf:
+                        old_params = wf.getparams()
+                        old_frames = wf.readframes(wf.getnframes())
+                    if old_params[:3] != (channels, 2, rate):
+                        raise ValueError("Existing file format mismatch.")
+                    all_frames = old_frames + new_frames
+                else:
+                    all_frames = new_frames
+
+                with wave.open(OUTPUT_FILE, 'wb') as wf:
+                    wf.setnchannels(channels)
+                    wf.setsampwidth(2)
+                    wf.setframerate(rate)
+                    wf.writeframes(all_frames)
+
         except KeyboardInterrupt:
             print("Interrupted")
         finally:
-            # print("Exited record_chunk()")
+            print("Exited record_chunk()")
             stop_event.set()
             record_thread.join()
             del p
             time.sleep(1)
-            # print("Exited record_chunk()")
             return
 
 if __name__ == "__main__":
-
-   while True: # asyncio.run(main())
     live_caption()
-    print("Restarting process to refresh audio device state...", flush=True)
-    time.sleep(1)
-    os.execv(sys.executable, ['python'] + sys.argv)  # relaunch the script
