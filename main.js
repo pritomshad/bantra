@@ -5,6 +5,7 @@ const fs = require("fs");
 
 let captionWindow = null;
 let transcriptionRunning = true;
+
 const createWindow = () => {
   const win = new BrowserWindow({
     webPreferences: {
@@ -144,8 +145,8 @@ const createCaptionWindow = () => {
 
   // When the window is closed, kill the Python process if running
   captionWindow.on("closed", () => {
+    transcriptionRunning = false;
     if (python) {
-      transcriptionRunning = false;
       python.kill();
       // dython.kill();
       python = null;
@@ -158,6 +159,12 @@ const closeCaptionWindow = () => {
   if (captionWindow && !captionWindow.isDestroyed()) {
     captionWindow.close();
     captionWindow = null;
+    let txtfile = null;
+    console.log(1);
+    txtfile = spawn("python", ["generating_txtfile.py"]);
+    txtfile.stdout.on("data", (data) => {
+      console.log(`Python: ${data.toString()}`);
+    });
   }
 };
 app.on("ready", () => {
