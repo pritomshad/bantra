@@ -39,8 +39,10 @@ const createWindow = () => {
     request.on("response", (_response) => {
       _response.on("data", (chunk) => {
         let parsed_json = JSON.parse(chunk.toString());
+        console.log(parsed_json);
         if (parsed_json.done) {
           // When ollama finishes sending tokens parsed_json.done becomes true
+          // console.log(222);
           win.webContents.send("inference-done");
         }
         // Each token is sent to renderer
@@ -58,7 +60,7 @@ const createWindow = () => {
       "utf8"
     );
     const payload = JSON.stringify({
-      model: "llama3.2",
+      model: "tinyllama",
       prompt: `You are a Class Note Generator who is very good at making well organised notes from raw class lecture transcript.
       Given the following transcript make a note :
       
@@ -160,7 +162,7 @@ const closeCaptionWindow = () => {
     captionWindow.close();
     captionWindow = null;
     let txtfile = null;
-    console.log(1);
+    console.log(11);
     txtfile = spawn("python", ["generating_txtfile.py"]);
     txtfile.stdout.on("data", (data) => {
       console.log(`Python: ${data.toString()}`);
