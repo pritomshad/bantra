@@ -162,7 +162,7 @@ const closeCaptionWindow = () => {
     captionWindow.close();
     captionWindow = null;
     let txtfile = null;
-    console.log(11);
+    // console.log(11);
     txtfile = spawn("python", ["generating_txtfile.py"]);
     txtfile.stdout.on("data", (data) => {
       console.log(`Python: ${data.toString()}`);

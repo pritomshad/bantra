@@ -1,15 +1,26 @@
 import pyaudiowpatch as pyaudio
 import json
 import speech_recognition as sr
-from pydub import AudioSegment
+from pydub import AudioSegment, silence
 
 def chunking_audio():
     chunks = []
     audio =  AudioSegment.from_wav("output.wav")
-    for i in range(0,len(audio), 15000):
-        end = len(audio) if i + 15000 > len(audio) else i + 15000
-        chunk = audio[i:end]
-        chunks.append(chunk)
+    temp_chunks = silence.split_on_silence(
+        audio,
+        min_silence_len=700,
+        silence_thresh=-30,
+        keep_silence=150  # optional: keep 300ms of silence on edges
+    )
+    for chunk in temp_chunks:
+        if(len(chunk) <= 15000):
+            chunks.append(chunk)
+        else:
+            for i in range(0,len(chunk), 15000):
+                end = len(chunk) if i + 15000 > len(chunk) else i + 15000
+                new_chunk = chunk[i:end]
+                chunks.append(new_chunk)
+    
     return chunks
 
 def generate_txt():
