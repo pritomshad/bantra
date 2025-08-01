@@ -10,7 +10,7 @@
   "author": "Jawad Aziz Chowdhury, Pritom Das",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^36.4.0"
+    "electron": "^36.7.3"
   },
   "dependencies": {
     "boolean": "^3.2.0",
@@ -47,7 +47,7 @@
     "jsonfile": "^4.0.0",
     "keyv": "^4.5.4",
     "lowercase-keys": "^2.0.0",
-    "marked": "^16.0.0",
+    "marked": "^16.1.1",
     "matcher": "^3.0.0",
     "mimic-response": "^1.0.1",
     "ms": "^2.1.3",

@@ -1,25 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'"
     />
     <meta
       http-equiv="X-Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'"
     />
     <title>Bantra</title>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <h1>Hello from Bantra. test: initial!</h1>
-    <button id="transciption-button" value="1">START TRANSCRIPTION</button>
-    <p id="caption">👋</p>
-    </br>
-    <button id="generate-note-button">Generate Note</button>
+    <h1>🎤 Bantra – Live Transcription and Note Generation</h1>
+
+    <div class="button-group">
+      <button id="transciption-button" value="1">Start Transcription</button>
+      <button id="refresh-button">Refresh</button>
+    </div>
+
     <p id="generated-text"></p>
+
+    <script src="./renderer.js"></script>
+    <script src="./libs/marked.min.js"></script>
   </body>
-  <script src="./renderer.js"></script>
 </html>

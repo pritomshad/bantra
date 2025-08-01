@@ -1,3 +1,17 @@
+/**
+ * Bantra - A tool for generating class notes from lecture transcripts. Also a live captioning tool.
+ * It uses Electron for the desktop application, Python for ASR, and Ollama for note generation.
+ * This file is the main process of the Electron application.
+ * It handles the creation of windows, IPC communication, and integration with Python scripts.
+ * 
+ * 
+ * @author pritomash
+ * @author JACsadi
+ * @version 1.0.0
+ * @license MIT
+ */
+
+
 const { app, net, BrowserWindow, ipcMain, screen } = require("electron/main");
 const { spawn } = require("child_process");
 const path = require("node:path");
@@ -21,7 +35,7 @@ const createWindow = () => {
    */
   let isProcessing = false;
 
-  ipcMain.handle("ollama-make-note", async () => {
+  ipcMain.handle("ollama-make-note", async (_event, filename) => {
     console.log("from main: ollama activated...");
     if (isProcessing) {
       return;
@@ -43,7 +57,15 @@ const createWindow = () => {
         if (parsed_json.done) {
           // When ollama finishes sending tokens parsed_json.done becomes true
           // console.log(222);
-          win.webContents.send("inference-done");
+
+          // rename the txt file
+          let newFilename = filename.split(".")[0] + ".TRUE_TRAX.txt";
+          fs.renameSync(
+            path.join(__dirname, filename), 
+            path.join(__dirname, newFilename)
+          );
+          
+          win.webContents.send("inference-done", filename);
         }
         // Each token is sent to renderer
         win.webContents.send("inference", parsed_json.response);
@@ -56,12 +78,14 @@ const createWindow = () => {
      * Write a better prompt ig.
      */
     const text_content = fs.readFileSync(
-      path.join(__dirname, "output.txt"),
+      path.join(__dirname, filename),
       "utf8"
     );
     const payload = JSON.stringify({
-      model: "tinyllama",
+      model: "llama3.2",
       prompt: `You are a Class Note Generator who is very good at making well organised notes from raw class lecture transcript.
+      The notes should be well structured, with headings, subheadings, bullet points, and other formatting as needed. The first
+      line of the note should not have any formatting.
       Given the following transcript make a note :
       
       Raw Class Lecture Transcript:
@@ -76,7 +100,7 @@ const createWindow = () => {
   });
 
   win.loadFile("index.html");
-  win.webContents.openDevTools();
+  // win.webContents.openDevTools();
 };
 
 const createCaptionWindow = () => {
@@ -165,10 +189,36 @@ const closeCaptionWindow = () => {
     // console.log(11);
     txtfile = spawn("python", ["generating_txtfile.py"]);
     txtfile.stdout.on("data", (data) => {
-      console.log(`Python: ${data.toString()}`);
+      console.log(`Python Tranx: ${data.toString()}`);
     });
   }
 };
+
+const createNotesWindow = (note) => {
+  notesWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
+
+  // 'note' is the filename of the note to be opened
+  let textContent = "";
+  textContent = fs.readFileSync(path.join(__dirname, note), "utf8");
+  console.log(textContent);
+
+  // notesWindow.webContents.send("note-content", textContent);
+  console.log("Sent note content to notes window");
+
+  notesWindow.loadFile(path.join(__dirname, "notes-window", "notes-window.html"))
+  .then(() => {
+    console.log("Notes window loaded successfully");
+    notesWindow.webContents.send("note-content", textContent);
+  });
+  // notesWindow.webContents.openDevTools();
+};
+
 app.on("ready", () => {
   createWindow();
 
@@ -179,6 +229,49 @@ app.on("ready", () => {
   ipcMain.on("stop-transcription", () => {
     closeCaptionWindow();
   });
+  ipcMain.on("open-notes-window", (_event, note) => {
+    createNotesWindow(note);
+  });
+  ipcMain.on("refresh", () => {
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    if (focusedWindow) {
+      focusedWindow.reload();
+    }
+  });
+
+  ipcMain.handle('save-text-buffer', async (_event, buffer, filename) => {
+    console.log("Saving text buffer to file:", filename);
+    fs.writeFileSync(filename, buffer, 'utf-8');
+  });
+
+  const transcriptDir = __dirname;
+
+  ipcMain.handle("get-transcript-files", async () => {
+    const files = fs.readdirSync(transcriptDir)
+      .filter(name => name.endsWith("_TRAX.txt"))
+      .map(name => ({
+        name,
+        time: fs.statSync(path.join(transcriptDir, name)).mtime.getTime(),
+      }))
+      .sort((a, b) => b.time - a.time) // Sort by modification time (descending)
+      .map(file => file.name); // Return only the file names
+
+    return files;
+  });
+
+  ipcMain.handle("get-note-files", async () => {
+    const files = fs.readdirSync(transcriptDir)
+      .filter(name => name.endsWith(".md"))
+      .map(name => ({
+        name,
+        time: fs.statSync(path.join(transcriptDir, name)).mtime.getTime(),
+      }))
+      .sort((a, b) => b.time - a.time) // Sort by modification time (descending)
+      .map(file => file.name); // Return only the file names
+
+    return files;
+  });
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();

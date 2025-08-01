@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="./styles.css"/>
+    <meta charset="UTF-8" />
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <meta
+      http-equiv="X-Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <title>Show Note</title>
+  </head>
+  <body>
+    <div id="note">
+        <p id="note-container"></p>
+    </div>
+    
+    <script src="./renderer.js"></script>
+    <script src="../libs/marked.min.js"></script>
+  </body>
+  
+</html>

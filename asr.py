@@ -7,8 +7,9 @@ import queue
 import threading
 import time
 import os
+from datetime import datetime
 
-OUTPUT_FILE = "output.wav"
+# OUTPUT_FILE = "output.wav"
 
 def get_active_audio_device(p: pyaudio.PyAudio):
     try:
@@ -82,7 +83,7 @@ def record_chunk(p: pyaudio.PyAudio, device_index: int, channels: int, rate: int
     stream.stop_stream()
     stream.close()
 
-def live_caption():
+def live_caption(filename: str):
     recognizer = sr.Recognizer()
     audio_queue = queue.Queue(maxsize=10)
     stop_event = threading.Event()
@@ -122,30 +123,39 @@ def live_caption():
                         audio_data = recognizer.record(source)
                     text = recognizer.recognize_google(audio_data, language='bn-BD')
                     print(json.dumps({"text": text}), flush=True)
+
+
+                    # save to file
+                    with open(filename, "a", encoding="utf-8") as f:
+                        f.write(text + "\n")
+                        f.flush()
+
+
+                    
                 except sr.UnknownValueError:
                     print(json.dumps({"text": "[[Unrecognized speech]]"}), flush=True)
                 except sr.RequestError as e:
                     print(json.dumps({"error": f"API request failed: {e}"}), flush=True)
                     break
 
-                audio_chunk.seek(0)
-                with wave.open(audio_chunk, 'rb') as wf:
-                    new_frames = wf.readframes(wf.getnframes())
-                if os.path.exists(OUTPUT_FILE):
-                    with wave.open(OUTPUT_FILE, 'rb') as wf:
-                        old_params = wf.getparams()
-                        old_frames = wf.readframes(wf.getnframes())
-                    if old_params[:3] != (channels, 2, rate):
-                        raise ValueError("Existing file format mismatch.")
-                    all_frames = old_frames + new_frames
-                else:
-                    all_frames = new_frames
+                # audio_chunk.seek(0)
+                # with wave.open(audio_chunk, 'rb') as wf:
+                #     new_frames = wf.readframes(wf.getnframes())
+                # if os.path.exists(OUTPUT_FILE):
+                #     with wave.open(OUTPUT_FILE, 'rb') as wf:
+                #         old_params = wf.getparams()
+                #         old_frames = wf.readframes(wf.getnframes())
+                #     if old_params[:3] != (channels, 2, rate):
+                #         raise ValueError("Existing file format mismatch.")
+                #     all_frames = old_frames + new_frames
+                # else:
+                #     all_frames = new_frames
 
-                with wave.open(OUTPUT_FILE, 'wb') as wf:
-                    wf.setnchannels(channels)
-                    wf.setsampwidth(2)
-                    wf.setframerate(rate)
-                    wf.writeframes(all_frames)
+                # with wave.open(OUTPUT_FILE, 'wb') as wf:
+                #     wf.setnchannels(channels)
+                #     wf.setsampwidth(2)
+                #     wf.setframerate(rate)
+                #     wf.writeframes(all_frames)
 
         except KeyboardInterrupt:
             print("Interrupted")
@@ -158,4 +168,9 @@ def live_caption():
             return
 
 if __name__ == "__main__":
-    live_caption()
+
+    filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".FALSE_TRAX.txt"
+    with open(filename, "w") as f:
+        f.write("Live caption started at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
+
+    live_caption(filename)
