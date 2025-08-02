@@ -15,7 +15,8 @@ contextBridge.exposeInMainWorld('bantraAPI', {
   openNotesWindow: (note) => ipcRenderer.send('open-notes-window', note),
   onGettingNoteContentForNotesWindow: (callback) => 
     ipcRenderer.on("note-content", (_event, content) => callback(content)),
-  refresh: () => ipcRenderer.send('refresh')
+  refresh: () => ipcRenderer.send('refresh'),
+  deleteTranscriptFile: (filename) => ipcRenderer.invoke('delete-transcript-file', filename)
 })
 
 contextBridge.exposeInMainWorld('ollamaAPI', {

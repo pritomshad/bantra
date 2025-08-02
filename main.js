@@ -244,6 +244,18 @@ app.on("ready", () => {
     fs.writeFileSync(filename, buffer, 'utf-8');
   });
 
+  ipcMain.handle('delete-transcript-file', async (_event, filename) => {
+    console.log("Deleting transcript file:", filename);
+    const filePath = path.join(__dirname, filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log("File deleted successfully");
+    } else {
+      console.error("File does not exist:", filePath);
+      throw new Error(`File not found: ${filePath}`);
+    }
+  });
+
   const transcriptDir = __dirname;
 
   ipcMain.handle("get-transcript-files", async () => {

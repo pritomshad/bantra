@@ -12,11 +12,8 @@ transcripButton.addEventListener("click", () => {
   } else {
     transcripButton.innerText = "START TRANSCRIPTION";
     transcripButton.value = "1";
-    window.bantraAPI.onTranscriptionButtonPress(0).then(
-      () => {
-        window.bantraAPI.refresh();
-      }
-    );
+    window.bantraAPI.onTranscriptionButtonPress(0);
+    window.bantraAPI.refresh();
     // some function to process the transcript and save the note
   }
 });
@@ -52,9 +49,6 @@ window.bantraAPI.onInferenceDone((filename) => {
   title = title.trim().replace(/\s+/g, '-'); // Replace spaces with hyphens
   title = title + "." + filename.split('.')[0] + ".md";
 
-  // refresh the app
-  window.bantraAPI.getTranscriptFiles();
-
   window.bantraAPI.saveTextBuffer(textBuffer, title);
 });
 
@@ -88,10 +82,48 @@ window.addEventListener("DOMContentLoaded", async () => {
     wrapper.style.backgroundColor = "#f8f8f8";
 
     const filename = document.createElement("p");
-    filename.textContent = file;
+    filename.textContent = "Date: " + file.split('.')[0].split('_')[0] + " Time: " + file.split('.')[0].split('_')[1];
     filename.style.marginBottom = "0.5rem";
+    filename.style.fontWeight = "bold";
 
     const btn = document.createElement("button");
+
+    // Open transcript button
+    const openTranscriptButton = document.createElement("button");
+    openTranscriptButton.textContent = "Open Transcript";
+    openTranscriptButton.style.marginRight = "0.5rem";
+    openTranscriptButton.style.padding = "0.5rem 1rem";
+    openTranscriptButton.style.backgroundColor = "#00d4b8ff";
+    openTranscriptButton.style.color = "white";
+    openTranscriptButton.style.border = "none";
+
+    // Delete transcript button
+    const deleteTranscriptButton = document.createElement("button");
+    deleteTranscriptButton.textContent = "Delete Transcript";
+    deleteTranscriptButton.style.padding = "0.5rem 1rem";
+    deleteTranscriptButton.style.backgroundColor = "#ff4d4d";
+    deleteTranscriptButton.style.color = "white";
+    deleteTranscriptButton.style.border = "none";
+
+    openTranscriptButton.addEventListener("click", () => {
+      // Reusing the Notes Window to show the transcript
+      window.bantraAPI.openNotesWindow(file);
+    });
+    
+    deleteTranscriptButton.addEventListener("click", () => {
+      // Delete the transcript file
+      window.bantraAPI.deleteTranscriptFile(file)
+        .then(() => {
+          console.log(`Transcript file ${file} deleted successfully.`);
+          // Refresh the list of transcript files
+          window.bantraAPI.refresh();
+        })
+        .catch((error) => {
+          console.error(`Error deleting transcript file ${file}:`, error);
+        }
+      );
+    });
+
     const generatedNote = document.createElement("p");
 
     if (file.endsWith(".FALSE_TRAX.txt")) {
@@ -110,6 +142,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         generatedTextContainer = generatedNote;
         // console.log(generatedTextContainer);
         window.ollamaAPI.makeNote(file);
+        btn.textContent = "Generating Note...";
+        btn.disabled = true; // Disable the button after clicking
       });
       
     } else {
@@ -125,6 +159,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     wrapper.appendChild(filename);
     wrapper.appendChild(btn);
+    wrapper.appendChild(openTranscriptButton);
+    wrapper.appendChild(deleteTranscriptButton);
     wrapper.appendChild(generatedNote);
     container.appendChild(wrapper);
   });
