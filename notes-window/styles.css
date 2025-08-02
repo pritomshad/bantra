@@ -1,0 +1,66 @@
+/* Reset some defaults */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body Styling */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f7f9fc;
+  color: #333;
+  padding: 2rem;
+  line-height: 1.6;
+}
+
+/* Note Container */
+#note {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 0 auto;
+  overflow-wrap: break-word;
+}
+
+/* Markdown Rendered Text */
+#note-container h1,
+#note-container h2,
+#note-container h3 {
+  color: #2c3e50;
+  margin-top: 1.2em;
+}
+
+#note-container p {
+  margin-bottom: 1em;
+}
+
+#note-container ul,
+#note-container ol {
+  padding-left: 2em;
+  margin-bottom: 1em;
+}
+
+#note-container code {
+  background-color: #eef;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #3c3c3c;
+}
+
+#note-container pre {
+  background-color: #f4f4f4;
+  padding: 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+#note-container blockquote {
+  border-left: 4px solid #ddd;
+  padding-left: 1em;
+  color: #666;
+  margin: 1em 0;
+}
