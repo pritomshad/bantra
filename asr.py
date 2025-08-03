@@ -6,7 +6,7 @@ import speech_recognition as sr
 import queue
 import threading
 import time
-import os
+import sys
 from datetime import datetime
 
 # OUTPUT_FILE = "output.wav"
@@ -90,9 +90,9 @@ def live_caption(filename: str):
     with pyaudio.PyAudio() as p:
         try:
             p = pyaudio.PyAudio()
-            print("PyAudio initialized", flush=True)
+            print(json.dumps({"debug":"PyAudio initialized"}), flush=True)
         except Exception as e:
-            print(f"Failed to initialize PyAudio: {e}", flush=True)
+            print(json.dumps({"debug":f"Failed to initialize PyAudio: {e}"}), flush=True)
             return
 
         loopback = get_active_audio_device(p)
@@ -110,7 +110,7 @@ def live_caption(filename: str):
 
         try:
             while not (audio_queue.empty() and stop_event.is_set()):
-
+                    
                 audio_chunk = None
                 try:
                     audio_chunk = audio_queue.get(timeout=20)
@@ -133,7 +133,7 @@ def live_caption(filename: str):
 
                     
                 except sr.UnknownValueError:
-                    print(json.dumps({"text": "[[Unrecognized speech]]"}), flush=True)
+                    print(json.dumps({"text": "Unrecognized speech"}), flush=True)
                 except sr.RequestError as e:
                     print(json.dumps({"error": f"API request failed: {e}"}), flush=True)
                     break
@@ -169,8 +169,7 @@ def live_caption(filename: str):
 
 if __name__ == "__main__":
 
-    filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".FALSE_TRAX.txt"
-    with open(filename, "w") as f:
-        f.write("Live caption started at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
+    filename = sys.argv[1]
+
 
     live_caption(filename)

@@ -3,14 +3,13 @@
  * It uses Electron for the desktop application, Python for ASR, and Ollama for note generation.
  * This file is the main process of the Electron application.
  * It handles the creation of windows, IPC communication, and integration with Python scripts.
- * 
- * 
+ *
+ *
  * @author pritomash
  * @author JACsadi
  * @version 1.0.0
  * @license MIT
  */
-
 
 const { app, net, BrowserWindow, ipcMain, screen } = require("electron/main");
 const { spawn } = require("child_process");
@@ -61,10 +60,10 @@ const createWindow = () => {
           // rename the txt file
           let newFilename = filename.split(".")[0] + ".TRUE_TRAX.txt";
           fs.renameSync(
-            path.join(__dirname, filename), 
+            path.join(__dirname, filename),
             path.join(__dirname, newFilename)
           );
-          
+
           win.webContents.send("inference-done", filename);
         }
         // Each token is sent to renderer
@@ -131,18 +130,35 @@ const createCaptionWindow = () => {
   // Trancription start got positive signal
   const startTranscription = () => {
     // const transcripButton = document.getElementById("transciption-button");
+    // filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".FALSE_TRAX.txt"
+    var current_date = new Date();
+    let filename = `${current_date.getFullYear()}-${String(
+      current_date.getMonth() + 1
+    ).padStart(2, "0")}-${String(current_date.getDate()).padStart(
+      2,
+      "0"
+    )}_${String(current_date.getHours()).padStart(2, "0")}-${String(
+      current_date.getMinutes()
+    ).padStart(2, "0")}-${String(current_date.getSeconds()).padStart(
+      2,
+      "0"
+    )}.FALSE_TRAX.txt`;
+    console.log("Transcription started, filename:", filename);
+    fs.writeFileSync(filename, "", "utf-8");
     console.log("start-transcript: initialized");
     const rundython = () => {
       if (!transcriptionRunning) return;
 
-      python = spawn("python", ["asr.py"]);
+      python = spawn("python", ["asr.py", filename]);
 
       // dython = spawn("python", ["device.py"]);
       python.stdout.on("data", (data) => {
         console.log(`Python: ${data.toString()}`);
         try {
           const output = JSON.parse(data.toString());
-          captionWindow.webContents.send("py-message", output.text);
+          // console.log(output.text);
+          if (output.text == "[[Unrecognized speech]]") console.log("dsjads");
+          else captionWindow.webContents.send("py-message", output.text);
         } catch (err) {
           console.log("error: ", err);
         }
@@ -211,11 +227,12 @@ const createNotesWindow = (note) => {
   // notesWindow.webContents.send("note-content", textContent);
   console.log("Sent note content to notes window");
 
-  notesWindow.loadFile(path.join(__dirname, "notes-window", "notes-window.html"))
-  .then(() => {
-    console.log("Notes window loaded successfully");
-    notesWindow.webContents.send("note-content", textContent);
-  });
+  notesWindow
+    .loadFile(path.join(__dirname, "notes-window", "notes-window.html"))
+    .then(() => {
+      console.log("Notes window loaded successfully");
+      notesWindow.webContents.send("note-content", textContent);
+    });
   // notesWindow.webContents.openDevTools();
 };
 
@@ -239,12 +256,12 @@ app.on("ready", () => {
     }
   });
 
-  ipcMain.handle('save-text-buffer', async (_event, buffer, filename) => {
+  ipcMain.handle("save-text-buffer", async (_event, buffer, filename) => {
     console.log("Saving text buffer to file:", filename);
-    fs.writeFileSync(filename, buffer, 'utf-8');
+    fs.writeFileSync(filename, buffer, "utf-8");
   });
 
-  ipcMain.handle('delete-transcript-file', async (_event, filename) => {
+  ipcMain.handle("delete-transcript-file", async (_event, filename) => {
     console.log("Deleting transcript file:", filename);
     const filePath = path.join(__dirname, filename);
     if (fs.existsSync(filePath)) {
@@ -259,27 +276,29 @@ app.on("ready", () => {
   const transcriptDir = __dirname;
 
   ipcMain.handle("get-transcript-files", async () => {
-    const files = fs.readdirSync(transcriptDir)
-      .filter(name => name.endsWith("_TRAX.txt"))
-      .map(name => ({
+    const files = fs
+      .readdirSync(transcriptDir)
+      .filter((name) => name.endsWith("_TRAX.txt"))
+      .map((name) => ({
         name,
         time: fs.statSync(path.join(transcriptDir, name)).mtime.getTime(),
       }))
       .sort((a, b) => b.time - a.time) // Sort by modification time (descending)
-      .map(file => file.name); // Return only the file names
+      .map((file) => file.name); // Return only the file names
 
     return files;
   });
 
   ipcMain.handle("get-note-files", async () => {
-    const files = fs.readdirSync(transcriptDir)
-      .filter(name => name.endsWith(".md"))
-      .map(name => ({
+    const files = fs
+      .readdirSync(transcriptDir)
+      .filter((name) => name.endsWith(".md"))
+      .map((name) => ({
         name,
         time: fs.statSync(path.join(transcriptDir, name)).mtime.getTime(),
       }))
       .sort((a, b) => b.time - a.time) // Sort by modification time (descending)
-      .map(file => file.name); // Return only the file names
+      .map((file) => file.name); // Return only the file names
 
     return files;
   });
