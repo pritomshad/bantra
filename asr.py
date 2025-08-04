@@ -10,6 +10,62 @@ import sys
 from datetime import datetime
 
 # OUTPUT_FILE = "output.wav"
+MERGED_AUDIO = io.BytesIO()
+
+"""
+
+"""
+def trascribing_for_txt_file():
+    MERGED_AUDIO.seek(0)
+    with wave.open(MERGED_AUDIO, 'rb') as wf:
+        duration = wf.getnframes() / wf.getframerate()
+        print(f"Merged audio duration: {duration:.2f} seconds")
+    try:
+        print(4)
+        # audio_chunks.append(audio_chunk)
+        recognizer = sr.Recognizer()
+        print(5)
+        MERGED_AUDIO.seek(0)
+        with sr.AudioFile(MERGED_AUDIO) as source:
+            audio_data = recognizer.record(source)
+        text = recognizer.recognize_google(audio_data, language='bn-BD')
+        print(text)
+        
+
+                    # save to file
+        with open(filename, "a", encoding="utf-8") as f:
+            f.write(text + "\n")
+            f.flush()
+                    
+    except sr.UnknownValueError:
+        print(json.dumps({"text": "Unrecognized speech"}), flush=True)
+    except sr.RequestError as e:
+        print(json.dumps({"error": f"API request failed: {e}"}), flush=True)
+    return    
+
+txt_thread = threading.Thread(target=trascribing_for_txt_file)
+
+def mergeing_chunks(audio_chunks: list[io.BytesIO]):
+    print(1234)
+    with wave.open(MERGED_AUDIO,'wb') as merged:
+        print(12345)
+        bytes_to_object = audio_chunks[0]
+        bytes_to_object.seek(0)
+        print(123456)
+        with wave.open(bytes_to_object, 'rb') as h:
+            print(1234567)
+            merged.setparams(h.getparams())
+        for x in audio_chunks:
+            
+            x.seek(0)
+            with wave.open(x,'rb') as chunks:
+                fr = chunks.readframes(chunks.getnframes())
+                merged.writeframes(fr)
+
+    return
+            
+            
+
 
 def get_active_audio_device(p: pyaudio.PyAudio):
     try:
@@ -109,8 +165,10 @@ def live_caption(filename: str):
         record_thread.start()
 
         try:
+            audio_chunks = []
+            txt_thread_flag = False
             while not (audio_queue.empty() and stop_event.is_set()):
-                    
+                
                 audio_chunk = None
                 try:
                     audio_chunk = audio_queue.get(timeout=20)
@@ -119,6 +177,7 @@ def live_caption(filename: str):
                     continue
 
                 try:
+                    audio_chunks.append(audio_chunk)
                     with sr.AudioFile(audio_chunk) as source:
                         audio_data = recognizer.record(source)
                     text = recognizer.recognize_google(audio_data, language='bn-BD')
@@ -126,9 +185,9 @@ def live_caption(filename: str):
 
 
                     # save to file
-                    with open(filename, "a", encoding="utf-8") as f:
-                        f.write(text + "\n")
-                        f.flush()
+                    # with open(filename, "a", encoding="utf-8") as f:
+                    #     f.write(text + "\n")
+                    #     f.flush()
 
 
                     
@@ -137,7 +196,35 @@ def live_caption(filename: str):
                 except sr.RequestError as e:
                     print(json.dumps({"error": f"API request failed: {e}"}), flush=True)
                     break
-
+                print(len(audio_chunks))
+                if(len(audio_chunks) == 5 or (stop_event.is_set() and audio_queue.empty())):
+                    print(22)
+                    # print(type(audio_chunk))
+                    # audio_chunks[i].seek(0)
+                    # alu_porota = audio_chunks[0]
+                    MERGED_AUDIO.seek(0)
+                    MERGED_AUDIO.truncate(0)
+                    # for i in range(0,5):
+                    #     print(audio_chunks[i])
+                    #     bytes_to_object = audio_chunks[i]
+                    #     bytes_to_object.seek(0)
+                    #     content = bytes_to_object.read()
+                    #     MERGED_AUDIO.write(content)
+                    mergeing_chunks(audio_chunks)    
+                    audio_chunks.clear()
+                    print(3)
+                    # if(txt_thread_flag == True):
+                    #     print(333)
+                    #     txt_thread.join(1)
+                        
+                    print(444) 
+                    txt_thread = threading.Thread(target=trascribing_for_txt_file)   
+                    txt_thread.start() 
+                    print(555)
+                    txt_thread_flag = True
+                    #to handle when audio stops recording
+                    if(stop_event.is_set() and audio_queue.empty()):
+                        txt_thread.join(3)
                 # audio_chunk.seek(0)
                 # with wave.open(audio_chunk, 'rb') as wf:
                 #     new_frames = wf.readframes(wf.getnframes())
@@ -156,7 +243,7 @@ def live_caption(filename: str):
                 #     wf.setsampwidth(2)
                 #     wf.setframerate(rate)
                 #     wf.writeframes(all_frames)
-
+            
         except KeyboardInterrupt:
             print("Interrupted")
         finally:
